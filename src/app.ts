@@ -1,6 +1,12 @@
-import { Client, Intents } from "discord.js";
+import { Client, Collection, Intents } from "discord.js";
+import { commandsArr } from "./commands";
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+client.commands = new Collection();
+
+commandsArr.forEach((command) => {
+  client.commands.set(command.data.name, command);
+});
 
 client.once("ready", () => {
   console.log("Ready!");
@@ -11,18 +17,16 @@ client.on("interactionCreate", async (interaction) => {
 
   console.log({ ...interaction });
 
-  const { commandName } = interaction;
+  const command = client.commands.get(interaction.commandName);
 
-  if (commandName === "ping") {
-    await interaction.reply("Pong!");
-  } else if (commandName === "server") {
-    await interaction.reply(
-      `Server name: ${interaction?.guild?.name}\nTotal members: ${interaction?.guild?.memberCount}`
-    );
-  } else if (commandName === "user") {
-    await interaction.reply(
-      `Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`
-    );
+  try {
+    await command.execute(interaction);
+  } catch (err) {
+    console.error(err);
+    await interaction.reply({
+      content: "There was an error while executing this command!",
+      ephemeral: true,
+    });
   }
 });
 
